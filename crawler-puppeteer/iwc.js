@@ -4,6 +4,16 @@ import fs from 'fs'
 
 const url = 'https://www.iwencai.com/'
 
+// *************** 可以修改的 ********************//
+const searchTime = '2021.10.01-2022.02.01'
+const searchWord = `股权转让 ${searchTime}`
+const mobile = '15800524027'
+// 股权转让比例
+const transferProportion = 4
+// 股份转让金额
+const transferAmount = 100000000
+// *************** 可以修改的 ********************//
+
 let resultHead = []
 let stockHead = []
 let resultArray = []
@@ -12,7 +22,7 @@ const doLogin = false
 const loginForm = {
   loginBtnElement: '#topbarCon .login',
   loginPageElement: 'iframe#login_iframe',
-  mobile: '15800524027',
+  mobile: mobile,
   timeout: 50000
 }
 
@@ -25,12 +35,11 @@ const searchResult = {
   currentPage: 'div.pagination a.current',
   totalPage: 'div.pagination a'
 }
-
-const searchTime = '2021.10.01-2022.02.01'
-const searchWord = `股权转让 ${searchTime}`
 const searchInputElement = '#auto'
 const searchSubmitElement = '#qs-enter'
 const resultListSelector = '#tableWrap'
+
+
 
 function filterException(str) {
   str = str.replaceAll(',', '')
@@ -119,6 +128,7 @@ async function run() {
   let totalPage = rowsData[rowsData.length - 2]
   console.log(`totalPage: ${totalPage}`)
 
+  if (!doLogin) totalPage = 1
   for (let i = 0; i < totalPage; i++) {
     if (i > 0) {
       const currentPage = await page.evaluate(() => {
@@ -128,7 +138,7 @@ async function run() {
       if (i < totalPage) {
         await page.waitForSelector(searchResult.nextPage)
         await page.click(searchResult.nextPage)
-        await page.waitForTimeout(30000)
+        await page.waitForTimeout(10000)
       }
     }
     // 处理一页的数据
@@ -138,11 +148,50 @@ async function run() {
   // 查询所有年报
   await searchForDetail()
 
-  // 倒出文件
-  await saveAsExcel()
+  // 倒出文件，全部数据
+  await saveAsExcel(Object.assign([], resultArray), '全部数据')
+
+  // 倒出文件，筛选数据
+  let filterArray = Object.assign([], resultArray)
+  filterArray = filterArray.filter((row) => {
+    // 转让金额大于1亿或者转让股份大于4%
+    let rowTransferProportion = row[8]
+    let rowransferAmount = row[13] || ''
+    // console.log('受让方: ' + row[6])
+    // console.log('rowTransferProportion: ' + rowTransferProportion)
+    // console.log('rowransferAmount: ' + rowransferAmount)
+    rowransferAmount = rowransferAmount.replace('万', '0000')
+    rowransferAmount = rowransferAmount.replace('亿', '00000000')
+    if (
+      rowTransferProportion < transferProportion &&
+      rowransferAmount &&
+      rowransferAmount != '--' &&
+      rowransferAmount < transferAmount
+    ) {
+      return false
+    }
+    return true
+  })
+  await saveAsExcel(Object.assign([], filterArray), '筛选数据-转让金额')
+
+  // 倒出文件，筛选数据-私募
+  let filterArray1 = Object.assign([], filterArray).filter((row) => row[6].indexOf('私募') >= 0)
+  await saveAsExcel(filterArray1, '筛选数据-转让金额和私募')
+
+  // 倒出文件，筛选数据-转让金额和资产管理
+  let filterArray2 = Object.assign([], filterArray).filter((row) => {
+    console.log('资产管理: ' + row[6])
+    return row[6].indexOf('资产管理') >= 0
+  })
+  await saveAsExcel(filterArray2, '筛选数据-转让金额和资产管理')
+
+  let filterArray3 = Object.assign([], filterArray)
+  filterArray3 = filterArray3.filter((row) => row[6].indexOf('私募') < 0 || row[6].indexOf('资产管理') < 0)
+  await filter_tianyancha(filterArray3)
+  await saveAsExcel(filterArray3, '筛选数据-转让金额和国企')
 
   // Close browsers
-  // browser.close();
+  browser.close()
 }
 
 async function getElementInnerText(page, selectors) {
@@ -156,7 +205,7 @@ async function getOnePage(page) {
   const staticTableRow = await page.$$eval(`${resultListSelector} ${searchResult.staticTable} tr`, (row) => row)
   const scrollTableRow = await page.$$eval(`${resultListSelector} ${searchResult.scrollTable} tr`, (row) => row)
 
-  console.log(`result search: ${staticTableRow.length} && ${scrollTableRow.length}`)
+  // console.log(`result search: ${staticTableRow.length} && ${scrollTableRow.length}`)
 
   const staticTableData = await page.evaluate(() => {
     const elements = Array.from(document.querySelectorAll(`table.static_tbody_table tr td`))
@@ -164,12 +213,11 @@ async function getOnePage(page) {
   })
   const scrollTableData = await page.evaluate(() => {
     const elements = Array.from(document.querySelectorAll(`table.scroll_tbody_table tr td`))
-    console.log(elements)
     return elements.map((element) => element.innerText.trim())
   })
-  console.log(staticTableData.length, scrollTableData.length)
-  console.log('staticTableData:' + JSON.stringify(staticTableData))
-  console.log('scrollTableData:' + JSON.stringify(scrollTableData))
+  // console.log(staticTableData.length, scrollTableData.length)
+  // console.log('staticTableData:' + JSON.stringify(staticTableData))
+  // console.log('scrollTableData:' + JSON.stringify(scrollTableData))
 
   const staticTableArrayModule = staticTableData.length / staticTableRow.length
   const scrollTableArrayModule = scrollTableData.length / scrollTableRow.length
@@ -198,7 +246,7 @@ async function getOnePage(page) {
     }
   }
 
-  console.log('scrollTableArray: ' + JSON.stringify(scrollTableArray))
+  // console.log('scrollTableArray: ' + JSON.stringify(scrollTableArray))
 
   staticTableArray.forEach((array, index) => {
     resultArray.push(array.concat(scrollTableArray[index]))
@@ -236,7 +284,7 @@ async function searchForDetail() {
     await page.waitForSelector('.tabDataTab')
     const element = await page.$$(`.tabDataTab a`)
     await element[1].click()
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(1000)
 
     if (stockHead.length == 0) {
       stockHead = await page.evaluate(() => {
@@ -266,26 +314,82 @@ async function searchForDetail() {
         data2021.push(dataArr[i])
       }
     }
-    // stockHead.forEach((head, index) => {
-    //   data2021Json[head] = data2021[index]
-    // })
-    // console.log(data2021Json)
-
     resultArray[i] = resultArray[i].concat(data2021)
-
     await page.close()
   }
 }
 
 /**
+ * 天眼查
+ */
+async function filter_tianyancha(resultArray) {
+  const browser = await puppeteer.launch({
+    headless: false,
+    // defaultViewport: { width: 1920, height: 1080 },
+    args: [
+      '--start-maximized',
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-blink-features=AutomationControlled',
+      '--disable-web-security',
+      '--disable-features=IsolateOrigins,site-per-process'
+    ]
+  })
+  resultArray = resultArray.reverse()
+  for (let i = resultArray.length - 1; i >= 0; i--) {
+    const row = resultArray[i]
+
+    let companyName = row[6]
+    if (companyName.indexOf('【') >= 0) {
+      companyName = companyName.substring(companyName.indexOf('【') + 1, companyName.indexOf('】'))
+    }
+    if (companyName.length <= 4) {
+      resultArray.splice(i, 1)
+      continue
+    }
+    const url = `https://www.tianyancha.com/search?key=${companyName}`
+
+    const page = await browser.newPage()
+    // Wait until it is loaded
+    await page.goto(url, { waitUntil: 'networkidle2' })
+    await page.waitForTimeout(500)
+    // 等待结果
+    await page.waitForSelector('.result-list')
+    const rows = await page.$$('.result-list .search-item')
+
+    let isStateEnterprise = false
+    for (let j = 0; j < rows.length; j++) {
+      try {
+        const row = rows[j]
+        const rowCompanyName = await row.$eval('a.name', (element) => element.innerText)
+        if (rowCompanyName == companyName) {
+          const tags = await row.$eval('div.tag-list', (element) => element.innerText)
+          console.log('tags: ' + tags)
+          if (tags.indexOf('国企') >= 0 || tags.indexOf('国有') >= 0) {
+            isStateEnterprise = true
+          }
+          break
+        }
+      } catch (error) {
+        console.log(error)
+      }
+    }
+    if (!isStateEnterprise) {
+      resultArray.splice(i, 1)
+    }
+    await page.close()
+  }
+  browser.close()
+  resultArray = resultArray.reverse()
+}
+
+/**
  * 导出excel
  */
-async function saveAsExcel() {
+async function saveAsExcel(resultArray, name = 'excel') {
   resultArray.unshift([...resultHead, ...stockHead])
-
-  console.log(`resultArray:`)
-  console.log(JSON.stringify(resultArray))
-
+  // console.log(`resultArray:`)
+  // console.log(JSON.stringify(resultArray))
   const list = [
     {
       name: 'sheet',
@@ -294,7 +398,7 @@ async function saveAsExcel() {
   ]
 
   const buffer = xlsx.build(list)
-  fs.writeFile(`${__dirname}/dist/myFile.xlsx`, buffer, function (err) {
+  fs.writeFile(`${__dirname}/dist/${name}.xlsx`, buffer, function (err) {
     if (err) {
       console.log(err, '保存excel出错')
     } else {
@@ -307,3 +411,7 @@ async function saveAsExcel() {
 run().then((res) => {
   console.log(res)
 })
+
+// searchFor_tianyancha('山东省港口集团有限公司').then((res) => {
+//   console.log(res)
+// })
