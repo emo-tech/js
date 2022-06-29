@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="../lib/browser-image-compression@2.0.0.js"></script>
+    <script src="../lib/jquery-3.4.1.min.js"></script>
+    <script src="../lib/vConsole.min.js"></script>
+</head>
+<body>
+    Options:<br />
+    <label for="initialQuality">initialQuality:
+        <input type="number" id="initialQuality" name="initialQuality" value="1" /></label><br />
+    <label for="maxSizeMB">maxSizeMB:
+        <input type="number" id="maxSizeMB" name="maxSizeMB" value="1" /></label><br />
+    <label for="maxWidthOrHeight">maxWidthOrHeight:
+        <input type="number" id="maxWidthOrHeight" name="maxWidthOrHeight" value="" /></label>
+    <hr />
+    <div>
+        <label for="inputFIle">
+            Compress in main thread <span id="main-thread-progress"></span>
+            <input id="inputFIle" type="file" accept="image/*"  />
+        </label>
+        <p id="main-thread-log"></p>
+    </div>
+
+<script>
+    $(function () {
+
+        $('#inputFIle').on('change', function(event) {
+            console.log("");
+            console.log("");
+            console.log("--------------------------");
+            var logDom = document.querySelector("#main-thread-log");
+
+            var file = event.target.files[0];
+            console.log("input", file);
+            var options = {
+                // initialQuality: parseFloat(document.querySelector("#initialQuality").value),
+                // maxSizeMB: parseFloat(document.querySelector("#maxSizeMB").value),
+                // maxWidthOrHeight: parseFloat(document.querySelector("#maxWidthOrHeight").value),
+            };
+
+            if (document.querySelector("#initialQuality").value) {
+                options.initialQuality = parseFloat(document.querySelector("#initialQuality").value)
+            }
+            if (document.querySelector("#maxSizeMB").value) {
+                options.maxSizeMB = parseFloat(document.querySelector("#maxSizeMB").value)
+            }
+            if (document.querySelector("#maxWidthOrHeight").value) {
+                options.maxWidthOrHeight = parseFloat(document.querySelector("#maxWidthOrHeight").value)
+            }
+
+            console.log("options", options)
+
+            imageCompression(file, options)
+                .then(function (output) {
+                    logDom.innerHTML += ", output size:" + (output.size / 1024 / 1024).toFixed(2) + "mb";
+                    console.log("output", output);
+                    const downloadLink = URL.createObjectURL(output);
+                    logDom.innerHTML += '&nbsp;<a href="' + downloadLink + '" download="' + file.name + '">download compressed image</a>';
+                })
+                .catch(function (error) {
+                    alert(error.message);
+                });
+        })
+    })
+
+
+</script>
+</body>
+</html>
