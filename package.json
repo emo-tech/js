@@ -4,7 +4,8 @@
   "description": "js test",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "react-scripts start"
   },
   "repository": {
     "type": "git",
@@ -18,10 +19,14 @@
   },
   "homepage": "https://github.com/sherxia92/js#readme",
   "dependencies": {
+    "antd-mobile": "^5.17.2",
     "exceljs": "^4.3.0",
     "node-xlsx": "^0.21.0",
     "playwright": "^1.21.1",
     "puppeteer": "^13.5.2",
+    "react": "16.8.0",
+    "react-dom": "16.8.0",
+    "react-scripts": "^5.0.1",
     "tesseract.js": "^2.1.5"
   },
   "devDependencies": {
