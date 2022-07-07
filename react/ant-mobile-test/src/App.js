@@ -1,24 +1,30 @@
 import React, { useState, useCallback } from 'react'
 import { Button, DatePicker, Space, Toast, DatePickerView, DatePickerFilter } from 'antd-mobile'
+import moment from "moment";
+import _ from 'lodash'
+
 
 function App() {
   const [visible, setVisible] = useState(false)
   const now = new Date()
+  const dateRange:Array<any> = [['1995-10-04', '1997-10-04'], ['2013-10-04', '2015-10-04']].flat().map(x => moment(x))
+
 
   const filter: DatePickerFilter = {
-    month: (val: number) => {
-      // 只显示双数月份
-      if (val % 2 !== 0) {
-        return false
+    year: (val: number) => {
+      if ((val >= dateRange[0].year() && val <= dateRange[1].year()) || (val >= dateRange[2].year() && val <= dateRange[3].year())) {
+        return true;
       }
-      return true
+      return false;
+    },
+    month: (val: number, { date }) => {
+      return ((moment(date).isSameOrAfter(dateRange[0], 'month') &&  moment(date).isSameOrBefore(dateRange[1], 'month'))
+          || (moment(date).isSameOrAfter(dateRange[2], 'month') &&  moment(date).isSameOrBefore(dateRange[3], 'month')))
+
     },
     day: (val, { date }) => {
-      // 去除所有周末
-      if (date.getDay() > 5 || date.getDay() === 0) {
-        return false
-      }
-      return true
+      return ((date.getTime() >= dateRange[0].toDate().getTime() && date.getTime() <= dateRange[1].toDate().getTime())
+          || (date.getTime() >= dateRange[2].toDate().getTime() && date.getTime() <= dateRange[3].toDate().getTime()))
     }
   }
 
@@ -71,6 +77,8 @@ function App() {
       </Button>
       <DatePicker
         title='时间选择'
+        min={dateRange[0].toDate()}
+        max={dateRange[3].toDate()}
         visible={visible}
         onClose={() => {
           setVisible(false)
@@ -79,17 +87,9 @@ function App() {
         onConfirm={val => {
           Toast.show(val.toLocaleString())
         }}
-        defaultValue={now}
+        // defaultValue={now}
         precision='day'
-        // filter={filter}
         filter={filter}
-      />
-
-      <DatePickerView
-        defaultValue={now}
-        precision='hour'
-        renderLabel={labelRenderer}
-        filter={dateFilter}
       />
     </div>
   );

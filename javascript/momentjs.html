@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="../lib/moment.js"></script>
+    <script src="../lib/lodash@2.4.2.js"></script>
+    <title>moment js</title>
+    <style>
+        html, body {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+<h1>moment js</h1>
+
+<script>
+    const dateRange = [['1995-10-04', '1997-10-04'], ['2013-10-04', '2015-10-04']].flat().map(x => moment(x))
+    const rangeMonth = _.clone(dateRange);
+
+    console.log('dateRange[0].date(1)', dateRange[0].date(1));
+    console.log('dateRange[0].set(\'date\', 1)', dateRange[0].set('date', 1));
+
+    console.log(rangeMonth[0]);
+
+    const date1 = moment(new Date()).date(1);
+    console.log('date1', date1);
+    console.log(date1.toLocaleString());
+
+    const date2 = moment().date(1).month(7).year(2022)
+    console.log('date2', date2);
+
+
+    console.log(dateRange);
+    console.log(rangeMonth);
+
+
+    console.log('---------------------');
+
+    console.log('moment(\'2010-10-20\').isSameOrBefore(\'2011-01-01\', \'year\'); ')
+    console.log(moment('2010-10-20').isSameOrBefore('2011-01-01', 'year')); // true
+
+
+
+
+</script>
+</body>
+</html>
