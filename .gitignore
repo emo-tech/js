@@ -105,3 +105,4 @@ dist
 /.idea/
 /yarn.lock
 /react/ant-mobile-test/.idea/
+/react/ant-mobile-test-18.2.0/.idea/
