@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>js class </title>
+</head>
+<body>
+
+<script>
+    class Foo {
+      constructor(label) {
+        this.label = label;
+      }
+
+      label() {
+        console.log('this is do label function');
+      }
+    }
+    const foo1 = new Foo("label1");
+    console.log(foo1)
+    foo1.label();
+</script>
+</body>
+</html>
